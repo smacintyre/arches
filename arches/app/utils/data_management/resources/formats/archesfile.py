@@ -29,8 +29,10 @@ from os.path import isfile, join
 from arches.app.utils.betterJSONSerializer import JSONSerializer, JSONDeserializer
 from arches.app.utils.data_management.resource_graphs.importer import import_graph as resourceGraphImporter
 from arches.app.models.tile import Tile, TileValidationError
+from arches.app.datatypes.datatypes import DataTypeFactory
 from arches.app.models.models import ResourceInstance
 from arches.app.models.models import FunctionXGraph
+from arches.app.models.models import Node
 from arches.app.models.models import NodeGroup
 from arches.app.models.models import GraphModel
 from arches.app.models.system_settings import settings
@@ -168,6 +170,18 @@ class ArchesFileReader(Reader):
                                     print(e)
                                 for child in src_tile["tiles"]:
                                     update_or_create_tile(child)
+
+                                for nodeid, node_value in src_tile["data"].items():
+                                    new_file = ''
+                                    node = Node.objects.get(nodeid=nodeid)
+                                    datatype = node.datatype
+                                    datatype_factory = DataTypeFactory()
+                                    datatype_instance = datatype_factory.get_instance(datatype)
+                                    if node_value is not None and datatype == 'file-list':
+                                        new_file = datatype_instance.transform_import_values(node_value, nodeid, src_tile['tileid'])
+
+                                    if new_file != '':
+                                        src_tile["data"][nodeid] = new_file
 
                             for tile in resource["tiles"]:
                                 tile["tiles"] = [child for child in resource["tiles"] if child["parenttile_id"] == tile["tileid"]]

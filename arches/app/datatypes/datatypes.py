@@ -1150,58 +1150,76 @@ class FileListDataType(BaseDataType):
                             tile_to_update.provisionaledits[str(user.id)]["value"][str(node.pk)] = updated_file_records
                         tile_to_update.save()
 
-    def transform_import_values(self, value, nodeid):
+    def transform_import_values(self, value, nodeid, tileid=''):
         """
-        # TODO: Following commented code can be used if user does not already have file in final location using django ORM:
-
-        request = HttpRequest()
-        # request.FILES['file-list_' + str(nodeid)] = None
-        files = []
-        # request_list = []
-
-        for val in value.split(','):
-            val_dict = {}
-            val_dict['content'] = val
-            val_dict['name'] = val.split('/')[-1].split('.')[0]
-            val_dict['url'] = None
-            # val_dict['size'] = None
-            # val_dict['width'] = None
-            # val_dict['height'] = None
-            files.append(val_dict)
-            f = open(val, 'rb')
-            django_file = InMemoryUploadedFile(f,'file',val.split('/')[-1].split('.')[0],None,None,None)
-            request.FILES.appendlist('file-list_' + str(nodeid), django_file)
-        print request.FILES
-        value = files
+        This function expects either:
+            A list of file paths from a csv file as a string:
+                'some_directory/file1.jpg,some_directory/file2.jpg'
+        or
+            A list of file objects from a file-list datatype tile from Arches:
+                [
+                    {
+                      "status": "uploaded",
+                      "index": 0,
+                      "name": "file.pdf",
+                      "url": "https://some_s3_bucket.amazonaws.com/media/uploadedfiles/file.pdf",
+                      "lastModified": 1517349817852,
+                      "content": "blob:https://arches_host_url.com/30e63c20-211c-4466-8b18-56cf41f285ea",
+                      "file_id": "ee22dd6e-d3ea-90e9-8380-029bbc3d4865",
+                      "accepted": true,
+                      "type": "application/pdf",
+                      "size": 2492863
+                    },
+                    {
+                      "status": "uploaded",
+                      "index": 0,
+                      "name": "file2.pdf",
+                      "url": "https://some_s3_bucket.amazonaws.com/media/uploadedfiles/20180906PortLTR_to_RWQCB_re_ENGEO_ConstructionPlans-Schedule_Pier_94_Landf_Qc3lRY8.pdf",
+                      "lastModified": 1536281543275,
+                      "content": "blob:https://sarches_host_url.com/0269a86d-9d06-4e0f-8904-fc1654c0ddfd",
+                      "file_id": "we2d9dac-d2ea-86e9-3580-029bbc8d4456",
+                      "accepted": true,
+                      "type": "application/pdf",
+                      "size": 2262255
+                    }
+                ]
         """
 
         mime = MimeTypes()
-        tile_data = []
-        for file_path in value.split(","):
+        transformed_tile_data = []
+        tileid = tileid
+
+        # check for incoming value type in accordance with note above. If string from csv, split into list
+        if isinstance(value, str):
+            value = value.split(",")
+
+        # iterate through value and create file json objects for tile and finally save file object to files table
+        for tile_to_transform in value:
             try:
-                file_stats = os.stat(file_path)
-                tile_file["lastModified"] = file_stats.st_mtime
-                tile_file["size"] = file_stats.st_size
+                # file_stats = os.stat(tile_to_transform)
+                new_file_object_for_tile["lastModified"] = tile_to_transform['lastModified'] if tile_to_transform['lastModified'] else ''
+                new_file_object_for_tile["size"] = tile_to_transform['size'] if tile_to_transform['size'] else ''
             except Exception as e:
                 pass
-            tile_file = {}
-            tile_file["file_id"] = str(uuid.uuid4())
-            tile_file["status"] = ""
-            tile_file["name"] = file_path.split("/")[-1]
-            tile_file["url"] = settings.MEDIA_URL + "uploadedfiles/" + str(tile_file["name"])
-            # tile_file['index'] =  0
-            # tile_file['height'] =  960
-            # tile_file['content'] =  None
-            # tile_file['width'] =  1280
-            # tile_file['accepted'] =  True
-            tile_file["type"] = mime.guess_type(file_path)[0]
-            tile_file["type"] = "" if tile_file["type"] is None else tile_file["type"]
-            tile_data.append(tile_file)
-            file_path = "uploadedfiles/" + str(tile_file["name"])
-            fileid = tile_file["file_id"]
-            models.File.objects.get_or_create(fileid=fileid, path=file_path)
+            new_file_object_for_tile = {}
+            new_file_object_for_tile["file_id"] = tile_to_transform['file_id'] if tile_to_transform['file_id'] else str(uuid.uuid4())
+            new_file_object_for_tile["status"] = tile_to_transform['status'] if tile_to_transform['status'] else ""
+            new_file_object_for_tile["name"] = tile_to_transform['name'] if tile_to_transform['name'] else tile_to_transform.split("/")[-1]
+            new_file_object_for_tile["url"] = tile_to_transform['url'] if tile_to_transform['url'] else settings.MEDIA_URL + "uploadedfiles/" + str(new_file_object_for_tile["name"])
+            # new_file_object_for_tile['index'] =  0
+            # new_file_object_for_tile['height'] =  960
+            # new_file_object_for_tile['content'] =  None
+            # new_file_object_for_tile['width'] =  1280
+            # new_file_object_for_tile['accepted'] =  True
+            new_file_object_for_tile["type"] = tile_to_transform['type'] if tile_to_transform['type'] else mime.guess_type(tile_to_transform)[0]
+            new_file_object_for_tile["type"] = "" if new_file_object_for_tile["type"] is None else new_file_object_for_tile["type"]
+            transformed_tile_data.append(new_file_object_for_tile)
+            file_path = "uploadedfiles/" + str(new_file_object_for_tile["name"])
 
-        result = json.loads(json.dumps(tile_data))
+            fileid = new_file_object_for_tile["file_id"]
+            models.File.objects.get_or_create(fileid=fileid, path=file_path, tile_id=tileid)
+
+        result = json.loads(json.dumps(transformed_tile_data))
         return result
 
     def is_a_literal_in_rdf(self):
