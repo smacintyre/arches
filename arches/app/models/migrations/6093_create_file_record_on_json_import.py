@@ -6,7 +6,7 @@ from django.db import migrations, models
 class Migration(migrations.Migration):
 
     dependencies = [
-        ('models', '2724_instance_permissions'),
+        ('models', '6125_details_search_component'),
     ]
 
     operations = [
