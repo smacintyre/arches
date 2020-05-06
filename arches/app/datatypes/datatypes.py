@@ -1187,7 +1187,7 @@ class FileListDataType(BaseDataType):
 
         mime = MimeTypes()
         transformed_tile_data = []
-        tileid = tileid
+        tileid = None if tileid == '' else tileid
 
         # check for incoming value type in accordance with note above. If string from csv, split into list
         if isinstance(value, str):
@@ -1196,23 +1196,23 @@ class FileListDataType(BaseDataType):
         # iterate through value and create file json objects for tile and finally save file object to files table
         for tile_to_transform in value:
             try:
-                # file_stats = os.stat(tile_to_transform)
+                file_stats = os.stat(tile_to_transform)
                 new_file_object_for_tile["lastModified"] = tile_to_transform['lastModified'] if tile_to_transform['lastModified'] else ''
                 new_file_object_for_tile["size"] = tile_to_transform['size'] if tile_to_transform['size'] else ''
             except Exception as e:
                 pass
             new_file_object_for_tile = {}
-            new_file_object_for_tile["file_id"] = tile_to_transform['file_id'] if tile_to_transform['file_id'] else str(uuid.uuid4())
-            new_file_object_for_tile["status"] = tile_to_transform['status'] if tile_to_transform['status'] else ""
-            new_file_object_for_tile["name"] = tile_to_transform['name'] if tile_to_transform['name'] else tile_to_transform.split("/")[-1]
-            new_file_object_for_tile["url"] = tile_to_transform['url'] if tile_to_transform['url'] else settings.MEDIA_URL + "uploadedfiles/" + str(new_file_object_for_tile["name"])
+            new_file_object_for_tile["file_id"] = tile_to_transform['file_id'] if isinstance(tile_to_transform, dict) and tile_to_transform['file_id'] else str(uuid.uuid4())
+            new_file_object_for_tile["status"] = tile_to_transform['status'] if isinstance(tile_to_transform, dict) and tile_to_transform['status'] else "uploaded"
+            new_file_object_for_tile["name"] = tile_to_transform['name'] if isinstance(tile_to_transform, dict) and tile_to_transform['name'] else tile_to_transform.split("/")[-1]
+            new_file_object_for_tile["url"] = tile_to_transform['url'] if isinstance(tile_to_transform, dict) and tile_to_transform['url'] else settings.MEDIA_URL + "uploadedfiles/" + str(new_file_object_for_tile["name"])
             # new_file_object_for_tile['index'] =  0
             # new_file_object_for_tile['height'] =  960
             # new_file_object_for_tile['content'] =  None
             # new_file_object_for_tile['width'] =  1280
-            # new_file_object_for_tile['accepted'] =  True
-            new_file_object_for_tile["type"] = tile_to_transform['type'] if tile_to_transform['type'] else mime.guess_type(tile_to_transform)[0]
-            new_file_object_for_tile["type"] = "" if new_file_object_for_tile["type"] is None else new_file_object_for_tile["type"]
+            new_file_object_for_tile['accepted'] = tile_to_transform['accepted'] if isinstance(tile_to_transform, dict) and tile_to_transform['accepted'] else True
+            new_file_object_for_tile["type"] = tile_to_transform['type'] if isinstance(tile_to_transform, dict) and tile_to_transform['type'] else mime.guess_type(tile_to_transform)[0]
+            new_file_object_for_tile["type"] = "" if isinstance(tile_to_transform, dict) and new_file_object_for_tile["type"] is None else new_file_object_for_tile["type"]
             transformed_tile_data.append(new_file_object_for_tile)
             file_path = "uploadedfiles/" + str(new_file_object_for_tile["name"])
 
