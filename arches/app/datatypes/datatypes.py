@@ -27,6 +27,7 @@ from django.contrib.gis.geos import fromstr
 from django.contrib.gis.geos import Polygon
 from django.core.exceptions import ObjectDoesNotExist
 from django.core.exceptions import ValidationError
+from django.core.files.storage import default_storage
 from django.db import connection, transaction
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import NotFoundError
@@ -1214,10 +1215,10 @@ class FileListDataType(BaseDataType):
             new_file_object_for_tile["type"] = tile_to_transform['type'] if isinstance(tile_to_transform, dict) and 'type' in tile_to_transform else mime.guess_type(tile_to_transform)[0]
             new_file_object_for_tile["type"] = "" if isinstance(tile_to_transform, dict) and 'type' in new_file_object_for_tile is None else new_file_object_for_tile["type"]
             transformed_tile_data.append(new_file_object_for_tile)
-            file_path = "uploadedfiles/" + str(new_file_object_for_tile["name"])
+            file_path = "uploadedfiles/" + default_storage.get_valid_name((str(new_file_object_for_tile["name"])))
 
             fileid = new_file_object_for_tile["file_id"]
-            models.File.objects.get_or_create(fileid=fileid, path=file_path, tile_id=tileid)
+            models.File.objects.get_or_create(fileid=fileid, tile_id=tileid)
 
         result = json.loads(json.dumps(transformed_tile_data))
         return result
