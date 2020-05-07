@@ -1205,7 +1205,7 @@ class FileListDataType(BaseDataType):
             new_file_object_for_tile["file_id"] = tile_to_transform['file_id'] if isinstance(tile_to_transform, dict) and tile_to_transform['file_id'] else str(uuid.uuid4())
             new_file_object_for_tile["status"] = tile_to_transform['status'] if isinstance(tile_to_transform, dict) and tile_to_transform['status'] else "uploaded"
             new_file_object_for_tile["name"] = tile_to_transform['name'] if isinstance(tile_to_transform, dict) and tile_to_transform['name'] else tile_to_transform.split("/")[-1]
-            new_file_object_for_tile["url"] = tile_to_transform['url'] if isinstance(tile_to_transform, dict) and tile_to_transform['url'] else settings.MEDIA_URL + "uploadedfiles/" + str(new_file_object_for_tile["name"])
+            new_file_object_for_tile["url"] = tile_to_transform['url'] if isinstance(tile_to_transform, dict) and tile_to_transform['url'] else settings.MEDIA_URL + "files/" + str(new_file_object_for_tile["name"])
             # new_file_object_for_tile['index'] =  0
             # new_file_object_for_tile['height'] =  960
             # new_file_object_for_tile['content'] =  None
