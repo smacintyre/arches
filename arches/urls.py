@@ -57,6 +57,7 @@ from arches.app.views.auth import LoginView, SignupView, ConfirmSignupView, Chan
 from arches.app.models.system_settings import settings
 from arches.app.utils.forms import ArchesPasswordResetForm
 from arches.app.utils.forms import ArchesSetPasswordForm
+from django.views.decorators.cache import cache_page
 
 # Uncomment the next two lines to enable the admin:
 from django.contrib import admin

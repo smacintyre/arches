@@ -455,12 +455,17 @@ class Graphs(APIBase):
     def get(self, request, graph_id=None):
         perm = "read_nodegroup"
         datatypes = models.DDataType.objects.all()
-        graph = Graph.objects.get(graphid=graph_id)
+        graph = cache.get(f"graph_{graph_id}")
+        user = request.user
+        if graph is None:
+            print("not using graph cache")
+            graph = Graph.objects.get(graphid=graph_id)
+            cache.set(f"graph_{graph_id}", JSONSerializer().serializeToPython(graph), settings.GRAPH_MODEL_CACHE_TIMEOUT)
         cards = CardProxyModel.objects.filter(graph_id=graph_id).order_by("sortorder")
         permitted_cards = []
         for card in cards:
-            if request.user.has_perm(perm, card.nodegroup):
-                card.filter_by_perm(request.user, perm)
+            if user.has_perm(perm, card.nodegroup):
+                card.filter_by_perm(user, perm)
                 permitted_cards.append(card)
         cardwidgets = [
             widget for widgets in [card.cardxnodexwidget_set.order_by("sortorder").all() for card in permitted_cards] for widget in widgets
@@ -504,6 +509,7 @@ class Resources(APIBase):
         if user_can_read_resources(user=request.user, resourceid=resourceid):
             allowed_formats = ["json", "json-ld"]
             format = request.GET.get("format", "json-ld")
+            include_tiles = request.GET.get("includetiles", True)
             if format not in allowed_formats:
                 return JSONResponse(status=406, reason="incorrect format specified, only %s formats allowed" % allowed_formats)
             try:
@@ -523,7 +529,8 @@ class Resources(APIBase):
                         return JSONResponse(status=404)
                 elif format == "json":
                     out = Resource.objects.get(pk=resourceid)
-                    out.load_tiles()
+                    if include_tiles is True:
+                        out.load_tiles()
             else:
                 #
                 # The following commented code would be what you would use if you wanted to use the rdflib module,
