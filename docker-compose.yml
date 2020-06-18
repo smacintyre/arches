@@ -3,7 +3,7 @@ services:
 
     arches:
       container_name: arches
-      image: getty/arches:5.0
+      image: smacintyre/arches:latest
       build:
         context: .
         dockerfile: ./Dockerfile
@@ -11,7 +11,9 @@ services:
       volumes:
         - arches-log:/arches/arches/logs
         - arches-static:/static_root
+        - ./arches_her:/web_root/arches_her
       environment:
+        - ARCHES_PROJECT=arches_her
         - INSTALL_DEFAULT_GRAPHS=False
         - INSTALL_DEFAULT_CONCEPTS=False
         - PGUSERNAME=postgres
@@ -25,7 +27,7 @@ services:
         - COUCHDB_PASS=password
         - ESHOST=elasticsearch
         - ESPORT=9200
-        - DJANGO_MODE=PROD
+        - DJANGO_MODE=DEV
         - DJANGO_DEBUG=False
         # - DJANGO_REMOTE_DEBUG=False
         - DOMAIN_NAMES=localhost
@@ -119,6 +121,7 @@ services:
         - TZ=PST
 
 volumes:
+    #./arches_her:/web_root/arches_her
     arches-log:
     arches-static:
     couchdb-data:

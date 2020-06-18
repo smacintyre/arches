@@ -1,0 +1,4 @@
+[submodule "arches_her"]
+	path = arches_her
+	url = git@github.com:smacintyre/arches-her.git
+	branch = pc-arches-her-branch
